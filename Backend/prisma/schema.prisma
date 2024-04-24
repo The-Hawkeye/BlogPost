@@ -30,6 +30,7 @@ model Blogs {
   image     String?
   author    String      
   authorId  Int
+  commentCount  Int       @default(0)
   // comments  Comment[]
 }
 
@@ -41,4 +42,5 @@ model Comment {
   // @relation(fields: [authorId], references: [id])
   author    String      
   authorId  Int
+  createdAt  DateTime     @default(now())
 }
