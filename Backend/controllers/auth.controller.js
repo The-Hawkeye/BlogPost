@@ -1,7 +1,7 @@
 const client = require("../db")
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken")
-
+const util = require("util");
 
 
 
@@ -10,19 +10,23 @@ module.exports.register = async(req,res)=>{
 
         const {id, username ,  password, role} = req.body;
 
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         const newUser = await client.user.create({
             data:{
                 id,
                 username,
-                password, 
+                password:hashedPassword, 
                 role
             }
             });
 
+            const token  = jwt.sign({id,username,role}, process.env.SECRET_KEY, { expiresIn:process.env.JWT_EXPIRY})
         console.log(newUser, "User created");
         res.status(201).json({
             status : 'success',
-            data:newUser
+            data:newUser,
+            token
         })
 
     }catch(err)
@@ -39,21 +43,38 @@ module.exports.register = async(req,res)=>{
 module.exports.login =  async(req,res)=>{
     try{
 
-        const {id, username ,  password, role} = req.body;
+        const {username ,  password} = req.body;
 
-        const newUser = await client.user.create({
-            data:{
-                id,
-                username,
-                password, 
-                role
+        if(!username || !password)
+        {
+            return res.status(401).json({
+                status:"failed",
+                message:"Both username and passwords are required to login"
+            })
+        }
+
+        const user = await client.user.findUnique({
+            where:{
+                username:username
             }
-            });
+        });
 
-        console.log(newUser, "User created");
+        // const check = await bcrypt.compare(password, user.password);
+
+        if(!user || !await bcrypt.compare(password, user.password))
+        {
+            return res.status(404).json({
+                status:"failed",
+                message:"Incorrect username or password"
+            })
+        }
+
+        const token  = jwt.sign({id,username,role}, process.env.SECRET_KEY, { expiresIn:process.env.JWT_EXPIRY})
+
         res.status(201).json({
             status : 'success',
-            data:newUser
+            token,
+            data:user
         })
 
     }catch(err)
@@ -67,78 +88,53 @@ module.exports.login =  async(req,res)=>{
 }
 
 
+module.exports.protect = async(req,res,next)=>{
+    try{
+        const testToken = req.headers.authorization;
 
+        let token;
+        if(testToken && testToken.startsWith('Bearer'))
+        {
+            token = testToken.split(" ")[1];
+        }
 
+        console.log(token);
 
-// import User from "../models/user.model.js"
-// import bcryptjs from "bcryptjs";
-// import { errorHandler } from "../utils/error.js"
-// import jwt from "jsonwebtoken";
+        if(!token)
+        {
+            return res.status(404).json({
+                status:"failed",
+                message:"Please Log In"
+            })
+        }
 
-// export const signup = async(req,res,next)=>{
-//     console.log(req.body);
+        const decodedToken = await util.promisify(jwt.verify)(token, process.env.SECRET_KEY);
+        console.log(decodedToken);
 
-//     const {username, email, password} = req.body;
+        const user = await client.user.findUnique({
+            where: {
+              username: decodedToken.username
+            }
+          })
 
-    
-//     try{
-//         const hashedPassword = await bcryptjs.hash(password, 10);
-    
-//         const newUser = new User({
-//             username,
-//             password:hashedPassword,
-//             email
-//         })
-    
-//         await newUser.save();
-//         res.status(200).json({message:"User created successfully"})
-        
-//     }catch(err)
-//     {
-//         next(err);
-//     }
+          if(!user)
+          {
+            return res.status(400).json({
+                status:"failed",
+                message:"User does not exist, Try signing up again"
+            })
+          }
 
+          req.user = user;
 
+        next();
 
-//     // res.send("Hello");
- 
-// }
-
-// export const signIn = async(req,res,next)=>{
-//     const {email, password}=req.body;
-
-//     if(!email||!password){
-//         return next(errorHandler(404,"Email or Password is missing"));
-//     }
-
-//     try{
-
-//         const validUser = await User.findOne({email});
-
-//         if(!validUser)
-//         {
-//             return next(errorHandler(404, "User not found"));
-//         }
-
-//         const validPassword = await bcryptjs.compare(password, validUser.password)
-
-//         if(!validPassword)
-//         {
-//             return next(errorHandler(403,'Wrong Credentials'));
-//         }
-
-//         const {password:pass, ...userData} = validUser._doc;
-
-//         const token  = jwt.sign({id:validUser._id}, process.env.JWT_SECRET);
-//         res.cookie('token',token,{httpOnly:true, expiresIn: new Date(Date.now()+ 24*60*60*30)}).status(200).json({
-//             message: 'Logged in Successfully' ,
-//             user : userData,
-//             success:true
-//         })
-
-
-//     }catch(err)
-//     {
-//         return next(err);
-//     }
-// }
+    }catch(err)
+    {
+        console.log(err)
+        res.status(500).json({
+            status:"failed",
+            message:"Internal server error, Try again after some time"
+        })
+    }
+}
