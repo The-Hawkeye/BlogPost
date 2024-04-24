@@ -19,25 +19,26 @@ model User {
   username  String    @unique
   password  String
   role      String
-  posts     Post[]
-  comments  Comment[]
+  // blogs     []
+  // comments  Comment[]
 }
 
-model Post {
+model Blogs {
   id        Int       @id @default(autoincrement())
   title     String
   content   String
   image     String?
-  author    User      @relation(fields: [authorId], references: [id])
+  author    String      
   authorId  Int
-  comments  Comment[]
+  // comments  Comment[]
 }
 
 model Comment {
   id        Int       @id @default(autoincrement())
   content   String
-  post      Post      @relation(fields: [postId], references: [id])
+  // post      Post      @relation(fields: [postId], references: [id])
   postId    Int
-  author    User      @relation(fields: [authorId], references: [id])
+  // @relation(fields: [authorId], references: [id])
+  author    String      
   authorId  Int
 }
