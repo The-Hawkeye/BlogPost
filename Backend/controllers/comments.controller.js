@@ -1,8 +1,24 @@
+const client = require("../db")
+
 module.exports.getAll =  async(req,res)=>{
     try{
-        let  allComments=await client.comment.findMany() ;
+        const {id} = req.params;
+        let blogId  = parseInt(id)
+
+        if(!id)
+        {
+            return res.status(403).json({
+                status:"failed",
+                message:"Invalid request"
+            })
+        }
+        let  allComments = await client.comment.findMany({
+            where:{
+                postId:blogId
+            }
+        }) ;
         
-       // console.log("all   comments ",allComments);
+       console.log("all   comments ",allComments);
         res.status(200).json({
             status:"succes",
             data:allComments
@@ -21,12 +37,14 @@ module.exports.create =  async(req,res)=>{
 
     try{
 
-        const blogId = req.params.id;
+        const blogId = parseInt(req.params.id);
+        // console.log(blogId);
+        const author  = req.user.username;
+        // console.log(author, "dfnjkds");
+        const authorId  = req.user.id;
 
-    const author  = req.user.username;
-    const authorId  = req.user.id;
-
-    const {content} = req.body;
+        const {content} = req.body;
+        // console.log(content)
 
     const newComment  = await client.comment.create({
         data:{
@@ -35,7 +53,7 @@ module.exports.create =  async(req,res)=>{
             postId:blogId,
             author,
             authorId,
-            createdAt:new Date.now()
+            createdAt:new Date().toISOString()
         }
     })
 

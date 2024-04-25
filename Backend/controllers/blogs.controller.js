@@ -19,17 +19,15 @@ module.exports.getAll = async(req,res)=>{
     }
 }
 
-
-
-
 module.exports.create = async(req, res)=>{
     try{
 
-        const {id , title , content , image, author , authorId} = req.body;
-        // const author = req.user.username;
-        // const authorId = req.user.id;
+        const {id , title , content , image} = req.body;
+        const author = req.user.username;
+        const authorId = req.user.id;
 
         // console.log(client)
+        // console.log(title);
 
         const  newBlog = await client.blogs.create({
             data:{
@@ -68,7 +66,7 @@ module.exports.delete =  async(req,res)=>{
         // console.log(req.params, "req.params")
         const {id} = req.params
         const blogId = parseInt(id);
-        console.log(id)
+        // console.log(id)
         let delBlog = await client.blogs.delete({
             where:{
                 id:blogId

@@ -69,7 +69,10 @@ module.exports.login =  async(req,res)=>{
             })
         }
 
-        const token  = jwt.sign({id,username,role}, process.env.SECRET_KEY, { expiresIn:process.env.JWT_EXPIRY})
+        console.log(user);
+        const {id} = user;
+
+        const token  = jwt.sign({id,username}, process.env.SECRET_KEY, { expiresIn:process.env.JWT_EXPIRY})
 
         res.status(201).json({
             status : 'success',
@@ -82,7 +85,7 @@ module.exports.login =  async(req,res)=>{
         console.log(err);
         res.status(400).json({
             status:"failed",
-            message:"Failed to create new user"
+            message:"Failed to login"
         })
     }
 }
