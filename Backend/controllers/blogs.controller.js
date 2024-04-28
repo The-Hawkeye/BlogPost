@@ -19,6 +19,26 @@ module.exports.getAll = async(req,res)=>{
     }
 }
 
+module.exports.getById = async(req,res)=>{
+    try{
+        let blog = await  client.blogs.findUnique({
+            where:{id:parseInt(req.params.id)}
+        });
+        
+        res.status(200).json({
+            status:"success",
+            data:blog
+        })
+    }catch(err)
+    {
+        console.log(err);
+        res.status(400).json({
+            status:"failed",
+            message:"Unable to fetch Blog"
+        })
+    }
+}
+
 module.exports.create = async(req, res)=>{
     try{
 
